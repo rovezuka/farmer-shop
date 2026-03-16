@@ -70,6 +70,16 @@ export const ordersAPI = {
   updateStatus: (id, data) => api.patch(`/orders/${id}/status`, data),
 };
 
+// ========== CATEGORIES ==========
+export const categoriesAPI = {
+  getAll: () => api.get('/categories'),
+};
+
+// ========== PICKUP POINTS ==========
+export const pickupPointsAPI = {
+  getAll: () => api.get('/pickup-points'),
+};
+
 // ========== ANALYTICS ==========
 export const analyticsAPI = {
   getSales: (period) => api.get('/analytics/sales', { params: { period } }),
