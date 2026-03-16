@@ -9,6 +9,7 @@ import ProductCard from '../components/ProductCard';
 export default function CatalogPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(null);
   const [sortBy, setSortBy] = useState('name');
@@ -34,6 +35,7 @@ export default function CatalogPage() {
 
   const loadProducts = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = {
         search: search || undefined,
@@ -46,6 +48,7 @@ export default function CatalogPage() {
       setProducts(res.data.items);
     } catch (err) {
       console.error('Ошибка загрузки товаров:', err);
+      setError('Не удалось загрузить товары. Проверьте подключение к серверу.');
     }
     setLoading(false);
   };
@@ -72,6 +75,7 @@ export default function CatalogPage() {
       </div>
 
       {/* Сетка товаров */}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       {loading ? (
         <p>Загрузка...</p>
       ) : (
