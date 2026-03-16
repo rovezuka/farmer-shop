@@ -12,17 +12,22 @@ from fastapi import HTTPException, status
 from app.core.config import settings
 
 # Контекст для bcrypt-хеширования (SRS: «пароли в хешированном виде с солью»)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+)
 
 
 def get_password_hash(password: str) -> str:
-    """Хеширует пароль алгоритмом bcrypt."""
-    return pwd_context.hash(password)
+    """"Хеширует пароль алгоритмом bcrypt."""
+    # bcrypt принимает максимум 72 байта
+    return pwd_context.hash(password[:72])
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Проверяет совпадение пароля с хешем."""
-    return pwd_context.verify(plain_password, hashed_password)
+     """Проверяет совпадение пароля с хешем."""
+     return pwd_context.verify(plain_password[:72], hashed_password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
