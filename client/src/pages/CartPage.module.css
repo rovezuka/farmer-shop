@@ -1,0 +1,28 @@
+.page { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+.page h2 { color: #2d6a2d; margin-bottom: 1.5rem; }
+.layout { display: flex; gap: 2rem; align-items: flex-start; }
+.list { flex: 1; display: flex; flex-direction: column; gap: .75rem; }
+.item { background: #fff; border-radius: 10px; padding: 1rem 1.2rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,.07); display: flex; justify-content: space-between; align-items: center; }
+.itemInfo { display: flex; flex-direction: column; gap: .2rem; }
+.itemName { font-weight: 600; }
+.itemPrice { font-size: .85rem; color: #888; }
+.itemCtrl { display: flex; align-items: center; gap: .6rem; }
+.itemCtrl button { width: 28px; height: 28px; border: 1px solid #ccc; background: #fff;
+  border-radius: 6px; font-size: 1rem; }
+.itemCtrl span { min-width: 2rem; text-align: center; font-weight: 600; }
+.itemTotal { font-weight: 700; color: #2d6a2d; min-width: 4rem; text-align: right; }
+.del { color: #c0392b !important; border-color: #c0392b !important; font-size: .85rem !important; }
+.summary { width: 280px; flex-shrink: 0; background: #fff; border-radius: 12px;
+  padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.08); position: sticky; top: 76px; }
+.summary h3 { margin-bottom: 1rem; color: #2d6a2d; }
+.summary label { display: flex; flex-direction: column; gap: .3rem; font-size: .85rem; font-weight: 500; margin-bottom: .8rem; }
+.summary select { padding: .5rem .6rem; border: 1px solid #ddd; border-radius: 6px; font-size: .9rem; }
+.total { font-size: 1.2rem; margin: 1rem 0; }
+.orderBtn { width: 100%; background: #2d6a2d; color: #fff; border: none; padding: .75rem;
+  border-radius: 8px; font-size: 1rem; font-weight: 600; }
+.orderBtn:disabled { opacity: .6; }
+.empty { text-align: center; padding: 4rem; }
+.empty p { font-size: 1.3rem; margin-bottom: 1.5rem; color: #888; }
+.empty button { background: #2d6a2d; color: #fff; border: none; padding: .75rem 2rem; border-radius: 8px; font-size: 1rem; }
+.success { text-align: center; padding: 4rem; font-size: 1.5rem; color: #2d6a2d; }

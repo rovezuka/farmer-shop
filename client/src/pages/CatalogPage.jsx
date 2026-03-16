@@ -1,91 +1,88 @@
-/**
- * Страница каталога товаров (SRS раздел 5.1 — Каталог товаров).
- * Поддерживает фильтрацию, поиск, геосортировку.
- */
-import { useState, useEffect } from 'react';
-import { productsAPI } from '../services/api';
-import ProductCard from '../components/ProductCard';
+import { useState, useEffect, useCallback } from 'react'
+import api from '../services/api'
+import ProductCard from '../components/ProductCard'
+import { CartProvider } from '../context/CartContext'
+import styles from './CatalogPage.module.css'
 
 export default function CatalogPage() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState(null);
-  const [sortBy, setSortBy] = useState('name');
-  const [userLocation, setUserLocation] = useState(null);
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState({ search: '', category_id: '', min_price: '', max_price: '', sort_by: 'name' })
 
-  // Определение геолокации (UC-2)
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-        }),
-        () => console.log('Геолокация недоступна')
-      );
-    }
-  }, []);
+  const perPage = 12
 
-  // Загрузка товаров
-  useEffect(() => {
-    loadProducts();
-  }, [search, categoryId, sortBy, userLocation]);
-
-  const loadProducts = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
     try {
-      const params = {
-        search: search || undefined,
-        category_id: categoryId || undefined,
-        sort_by: sortBy,
-        user_lat: userLocation?.lat,
-        user_lon: userLocation?.lon,
-      };
-      const res = await productsAPI.getAll(params);
-      setProducts(res.data.items);
-    } catch (err) {
-      console.error('Ошибка загрузки товаров:', err);
-      setError('Не удалось загрузить товары. Проверьте подключение к серверу.');
-    }
-    setLoading(false);
-  };
+      const params = { page, per_page: perPage, ...Object.fromEntries(Object.entries(filters).filter(([,v]) => v !== '')) }
+      const { data } = await api.get('/products', { params })
+      setProducts(data.items); setTotal(data.total)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }, [page, filters])
+
+  useEffect(() => { fetchProducts() }, [fetchProducts])
+
+  useEffect(() => {
+    api.get('/categories').then(r => setCategories(r.data)).catch(() => {})
+  }, [])
+
+  const setF = k => e => { setFilters(f => ({...f, [k]: e.target.value})); setPage(1) }
 
   return (
-    <div className="catalog-page">
-      <h1>Каталог фермерских продуктов</h1>
-
-      {/* Панель фильтров */}
-      <div className="filters">
-        <input
-          type="text"
-          placeholder="Поиск по названию..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="search-input"
-        />
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-          <option value="name">По названию</option>
-          <option value="price">По цене</option>
-          <option value="distance">Рядом со мной</option>
-          <option value="created_at">Новинки</option>
-        </select>
+    <CartProvider>
+    <div className={styles.page}>
+      <div className={styles.sidebar}>
+        <h3>Фильтры</h3>
+        <label>Поиск
+          <input placeholder="Найти товар..." value={filters.search} onChange={setF('search')} />
+        </label>
+        <label>Категория
+          <select value={filters.category_id} onChange={setF('category_id')}>
+            <option value="">Все категории</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </label>
+        <label>Цена от
+          <input type="number" min="0" value={filters.min_price} onChange={setF('min_price')} placeholder="0" />
+        </label>
+        <label>Цена до
+          <input type="number" min="0" value={filters.max_price} onChange={setF('max_price')} placeholder="∞" />
+        </label>
+        <label>Сортировка
+          <select value={filters.sort_by} onChange={setF('sort_by')}>
+            <option value="name">По названию</option>
+            <option value="price">По цене</option>
+            <option value="created_at">Новинки</option>
+          </select>
+        </label>
       </div>
 
-      {/* Сетка товаров */}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {loading ? (
-        <p>Загрузка...</p>
-      ) : (
-        <div className="products-grid">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-          {products.length === 0 && <p>Товары не найдены</p>}
+      <div className={styles.main}>
+        <div className={styles.header}>
+          <h2>Каталог товаров</h2>
+          <span>{total} товаров</span>
         </div>
-      )}
+        {loading ? <div className={styles.loading}>Загрузка...</div> : (
+          <>
+            <div className={styles.grid}>
+              {products.map(p => <ProductCard key={p.id} product={p} />)}
+              {products.length === 0 && <p className={styles.empty}>Товары не найдены</p>}
+            </div>
+            {total > perPage && (
+              <div className={styles.pagination}>
+                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Назад</button>
+                <span>Стр. {page} / {Math.ceil(total / perPage)}</span>
+                <button disabled={page >= Math.ceil(total / perPage)} onClick={() => setPage(p => p + 1)}>Вперёд →</button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
-  );
+    </CartProvider>
+  )
 }
