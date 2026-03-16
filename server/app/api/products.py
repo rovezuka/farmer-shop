@@ -240,6 +240,8 @@ async def update_product(
         select(Farmer).where(Farmer.user_id == current_user.id)
     )
     farmer = farmer_result.scalar_one_or_none()
+    if not farmer:
+        raise HTTPException(404, "Профиль фермера не найден")
 
     result = await db.execute(
         select(Product).where(Product.id == product_id, Product.farmer_id == farmer.id)
@@ -277,6 +279,8 @@ async def delete_product(
         select(Farmer).where(Farmer.user_id == current_user.id)
     )
     farmer = farmer_result.scalar_one_or_none()
+    if not farmer:
+        raise HTTPException(404, "Профиль фермера не найден")
 
     result = await db.execute(
         select(Product).where(Product.id == product_id, Product.farmer_id == farmer.id)

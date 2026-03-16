@@ -3,7 +3,7 @@
 Соответствует: SRS раздел 3.2 UC-7, раздел 4.3.
 """
 from datetime import date, timedelta
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -42,7 +42,9 @@ async def get_sales_analytics(
     farmer_result = await db.execute(
         select(Farmer).where(Farmer.user_id == current_user.id)
     )
-    farmer = farmer_result.scalar_one()
+    farmer = farmer_result.scalar_one_or_none()
+    if not farmer:
+        raise HTTPException(404, "Профиль фермера не найден")
 
     # Определяем период
     period_days = {"week": 7, "month": 30, "quarter": 90}

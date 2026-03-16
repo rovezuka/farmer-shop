@@ -144,6 +144,8 @@ async def get_my_orders(
         select(Customer).where(Customer.user_id == current_user.id)
     )
     customer = cust_result.scalar_one_or_none()
+    if not customer:
+        raise HTTPException(404, "Профиль покупателя не найден")
 
     query = (
         select(Order)
@@ -188,6 +190,8 @@ async def get_farmer_orders(
         select(Farmer).where(Farmer.user_id == current_user.id)
     )
     farmer = farmer_result.scalar_one_or_none()
+    if not farmer:
+        raise HTTPException(404, "Профиль фермера не найден")
 
     # Находим заказы, содержащие товары этого фермера
     query = (
@@ -237,12 +241,29 @@ async def update_order_status(
     Обновление статуса заказа фермером (UC-6).
     Подтверждение / отклонение / изменение статуса.
     """
+    farmer_result = await db.execute(
+        select(Farmer).where(Farmer.user_id == current_user.id)
+    )
+    farmer = farmer_result.scalar_one_or_none()
+    if not farmer:
+        raise HTTPException(404, "Профиль фермера не найден")
+
     result = await db.execute(
         select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
     )
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(404, "Заказ не найден")
+
+    # Проверяем что заказ содержит товары именно этого фермера
+    farmer_items_result = await db.execute(
+        select(OrderItem)
+        .join(Product)
+        .where(OrderItem.order_id == order.id)
+        .where(Product.farmer_id == farmer.id)
+    )
+    if not farmer_items_result.scalars().first():
+        raise HTTPException(403, "Этот заказ не содержит ваших товаров")
 
     new_status = OrderStatus(data.status)
 
