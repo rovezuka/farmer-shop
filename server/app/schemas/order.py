@@ -43,6 +43,13 @@ class OrderResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class OrderListResponse(BaseModel):
+    items: list[OrderResponse]
+    total: int
+    page: int
+    per_page: int
+
+
 class OrderStatusUpdate(BaseModel):
     """Обновление статуса заказа (фермером, UC-6)."""
     status: str = Field(pattern="^(confirmed|ready|delivered|cancelled)$")

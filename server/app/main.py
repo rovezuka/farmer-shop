@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.api import auth, products, orders, analytics
+from app.api import auth, products, orders, analytics, categories, pickup_points
 # from fastapi.staticfiles import StaticFiles
 # import os
 
@@ -40,9 +40,8 @@ app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(products.router, prefix=API_PREFIX)
 app.include_router(orders.router, prefix=API_PREFIX)
 app.include_router(analytics.router, prefix=API_PREFIX)
-# Добавить остальные роутеры по мере реализации:
-# app.include_router(categories.router, prefix=API_PREFIX)
-# app.include_router(pickup_points.router, prefix=API_PREFIX)
+app.include_router(categories.router, prefix=API_PREFIX)
+app.include_router(pickup_points.router, prefix=API_PREFIX)
 # app.include_router(reviews.router, prefix=API_PREFIX)
 # app.include_router(notifications.router, prefix=API_PREFIX)
 # app.include_router(admin.router, prefix=API_PREFIX)

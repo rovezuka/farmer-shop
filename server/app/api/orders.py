@@ -3,7 +3,7 @@
 Соответствует: SRS раздел 3.2 UC-3 (оформление), UC-4 (отслеживание), UC-6 (подтверждение).
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +13,7 @@ from app.models import (
 )
 from app.models.user import User
 from app.schemas.order import (
-    OrderCreate, OrderResponse, OrderItemResponse, OrderStatusUpdate
+    OrderCreate, OrderResponse, OrderItemResponse, OrderListResponse, OrderStatusUpdate
 )
 from app.core.dependencies import (
     get_current_user, get_current_customer, get_current_farmer
@@ -133,11 +133,13 @@ async def create_order(
     )
 
 
-@router.get("/my", response_model=list[OrderResponse])
+@router.get("/my", response_model=OrderListResponse)
 async def get_my_orders(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_customer),
         status_filter: str | None = None,
+        page: int = Query(1, ge=1),
+        per_page: int = Query(20, ge=1, le=100),
 ):
     """Получение заказов текущего покупателя (UC-4)."""
     cust_result = await db.execute(
@@ -147,19 +149,27 @@ async def get_my_orders(
     if not customer:
         raise HTTPException(404, "Профиль покупателя не найден")
 
-    query = (
+    base_query = (
         select(Order)
-        .options(selectinload(Order.items))
         .where(Order.customer_id == customer.id)
-        .order_by(Order.order_date.desc())
     )
     if status_filter:
-        query = query.where(Order.status == OrderStatus(status_filter))
+        base_query = base_query.where(Order.status == OrderStatus(status_filter))
 
+    total_result = await db.execute(select(func.count()).select_from(base_query.subquery()))
+    total = total_result.scalar()
+
+    query = (
+        base_query
+        .options(selectinload(Order.items))
+        .order_by(Order.order_date.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
     result = await db.execute(query)
     orders = result.scalars().all()
 
-    return [
+    items = [
         OrderResponse(
             id=o.id, customer_id=o.customer_id,
             pickup_point_id=o.pickup_point_id,
@@ -177,13 +187,16 @@ async def get_my_orders(
         )
         for o in orders
     ]
+    return OrderListResponse(items=items, total=total, page=page, per_page=per_page)
 
 
-@router.get("/farmer", response_model=list[OrderResponse])
+@router.get("/farmer", response_model=OrderListResponse)
 async def get_farmer_orders(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_farmer),
         status_filter: str | None = None,
+        page: int = Query(1, ge=1),
+        per_page: int = Query(20, ge=1, le=100),
 ):
     """Получение заказов, содержащих товары текущего фермера (UC-6)."""
     farmer_result = await db.execute(
@@ -194,22 +207,30 @@ async def get_farmer_orders(
         raise HTTPException(404, "Профиль фермера не найден")
 
     # Находим заказы, содержащие товары этого фермера
-    query = (
+    base_query = (
         select(Order)
-        .options(selectinload(Order.items).selectinload(OrderItem.product))
         .join(OrderItem)
         .join(Product)
         .where(Product.farmer_id == farmer.id)
         .distinct()
-        .order_by(Order.order_date.desc())
     )
     if status_filter:
-        query = query.where(Order.status == OrderStatus(status_filter))
+        base_query = base_query.where(Order.status == OrderStatus(status_filter))
 
+    total_result = await db.execute(select(func.count()).select_from(base_query.subquery()))
+    total = total_result.scalar()
+
+    query = (
+        base_query
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+        .order_by(Order.order_date.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
     result = await db.execute(query)
     orders = result.unique().scalars().all()
 
-    return [
+    items = [
         OrderResponse(
             id=o.id, customer_id=o.customer_id,
             pickup_point_id=o.pickup_point_id,
@@ -228,6 +249,7 @@ async def get_farmer_orders(
         )
         for o in orders
     ]
+    return OrderListResponse(items=items, total=total, page=page, per_page=per_page)
 
 
 @router.patch("/{order_id}/status", response_model=OrderResponse)

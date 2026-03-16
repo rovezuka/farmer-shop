@@ -82,11 +82,6 @@ async def get_products(
     if max_price is not None:
         query = query.where(Product.price <= max_price)
 
-    # Подсчёт общего количества
-    count_query = select(func.count()).select_from(query.subquery())
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
-
     # Сортировка (по умолчанию по имени; по расстоянию — на уровне Python)
     if sort_by == "price":
         query = query.order_by(Product.price)
@@ -95,12 +90,32 @@ async def get_products(
     else:
         query = query.order_by(Product.name)
 
-    # Пагинация
     offset = (page - 1) * per_page
-    query = query.offset(offset).limit(per_page)
+
+    # Если нужна фильтрация по расстоянию — загружаем все товары без SQL-пагинации,
+    # чтобы сначала отфильтровать по расстоянию, и только потом нарезать страницу.
+    # Иначе применяем LIMIT/OFFSET на уровне SQL.
+    use_python_pagination = bool(max_distance_km and user_lat and user_lon)
+
+    if not use_python_pagination:
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+        query = query.offset(offset).limit(per_page)
 
     result = await db.execute(query)
     products = result.scalars().all()
+
+    # Загружаем все рейтинги одним запросом (избегаем N+1)
+    product_ids = [p.id for p in products]
+    ratings: dict[int, float] = {}
+    if product_ids:
+        ratings_result = await db.execute(
+            select(Review.product_id, func.avg(Review.rating).label("avg_rating"))
+            .where(Review.product_id.in_(product_ids))
+            .group_by(Review.product_id)
+        )
+        ratings = {row.product_id: float(row.avg_rating) for row in ratings_result.all()}
 
     # Формирование ответа с расстоянием
     items = []
@@ -112,12 +127,7 @@ async def get_products(
                 1
             )
 
-        # Средний рейтинг (можно оптимизировать через подзапрос)
-        rating_result = await db.execute(
-            select(func.avg(Review.rating)).where(Review.product_id == p.id)
-        )
-        avg_rating = rating_result.scalar()
-
+        avg_rating = ratings.get(p.id)
         items.append(ProductResponse(
             id=p.id,
             name=p.name,
@@ -132,7 +142,7 @@ async def get_products(
             expiration_date=p.expiration_date,
             status=p.status.value if hasattr(p.status, 'value') else str(p.status),
             image_url=p.image_url,
-            avg_rating=round(float(avg_rating), 1) if avg_rating else None,
+            avg_rating=round(avg_rating, 1) if avg_rating else None,
             distance_km=distance,
         ))
 
@@ -140,10 +150,11 @@ async def get_products(
     if sort_by == "distance" and user_lat and user_lon:
         items.sort(key=lambda x: x.distance_km if x.distance_km else float("inf"))
 
-    # Фильтрация по максимальному расстоянию
-    if max_distance_km and user_lat and user_lon:
+    # Фильтрация и пагинация на уровне Python (только при использовании max_distance_km)
+    if use_python_pagination:
         items = [i for i in items if i.distance_km and i.distance_km <= max_distance_km]
         total = len(items)
+        items = items[offset:offset + per_page]
 
     return ProductListResponse(items=items, total=total, page=page, per_page=per_page)
 
@@ -161,9 +172,10 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(404, detail="Товар не найден")
 
     rating_result = await db.execute(
-        select(func.avg(Review.rating)).where(Review.product_id == product.id)
+        select(func.avg(Review.rating).label("avg_rating"))
+        .where(Review.product_id == product.id)
     )
-    avg_rating = rating_result.scalar()
+    avg_rating_val = rating_result.scalar()
 
     return ProductResponse(
         id=product.id, name=product.name,
@@ -178,7 +190,7 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
         expiration_date=product.expiration_date,
         status=product.status.value if hasattr(product.status, 'value') else str(product.status),
         image_url=product.image_url,
-        avg_rating=round(float(avg_rating), 1) if avg_rating else None,
+        avg_rating=round(float(avg_rating_val), 1) if avg_rating_val else None,
     )
 
 
