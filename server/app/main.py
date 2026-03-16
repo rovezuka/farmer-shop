@@ -8,6 +8,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.api import auth, products, orders, analytics
+# from fastapi.staticfiles import StaticFiles
+# import os
 
 # Создание приложения
 app = FastAPI(
@@ -17,6 +19,11 @@ app = FastAPI(
     docs_url="/docs",       # Swagger UI
     redoc_url="/redoc",     # ReDoc
 )
+
+# # Раздача статических файлов клиента
+# client_dist = os.path.join(os.path.dirname(__file__), "../../client/dist")
+# if os.path.exists(client_dist):
+#     app.mount("/", StaticFiles(directory=client_dist, html=True), name="client")
 
 # CORS (SRS раздел 5.4: безопасность коммуникаций)
 app.add_middleware(
