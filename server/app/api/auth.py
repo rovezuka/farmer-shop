@@ -10,11 +10,15 @@ from app.db.database import get_db
 from app.models.user import User, UserRole
 from app.models.customer import Customer
 from app.models.farmer import Farmer
-from app.schemas.auth import UserRegister, UserLogin, TokenResponse, TokenRefresh
+from app.schemas.auth import (
+    UserRegister, UserLogin, TokenResponse, TokenRefresh,
+    CustomerUpdate, CustomerResponse, FarmerUpdate, FarmerResponse,
+)
 from app.core.security import (
     get_password_hash, verify_password,
     create_access_token, create_refresh_token, decode_token,
 )
+from app.core.dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Аутентификация"])
 
@@ -122,3 +126,49 @@ async def refresh_token(data: TokenRefresh, db: AsyncSession = Depends(get_db)):
         role=user.role.value,
         user_id=user.id,
     )
+
+
+@router.patch("/me/customer", response_model=CustomerResponse)
+async def update_customer_profile(
+    data: CustomerUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновление профиля покупателя."""
+    if current_user.role != UserRole.CUSTOMER:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Доступ только для покупателей")
+
+    result = await db.execute(select(Customer).where(Customer.user_id == current_user.id))
+    customer = result.scalar_one_or_none()
+    if not customer:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Профиль покупателя не найден")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(customer, field, value)
+
+    await db.commit()
+    await db.refresh(customer)
+    return customer
+
+
+@router.patch("/me/farmer", response_model=FarmerResponse)
+async def update_farmer_profile(
+    data: FarmerUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновление профиля фермера."""
+    if current_user.role != UserRole.FARMER:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Доступ только для фермеров")
+
+    result = await db.execute(select(Farmer).where(Farmer.user_id == current_user.id))
+    farmer = result.scalar_one_or_none()
+    if not farmer:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Профиль фермера не найден")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(farmer, field, value)
+
+    await db.commit()
+    await db.refresh(farmer)
+    return farmer

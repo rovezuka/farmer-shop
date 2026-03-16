@@ -44,3 +44,47 @@ class TokenResponse(BaseModel):
 class TokenRefresh(BaseModel):
     """Запрос на обновление токена."""
     refresh_token: str
+
+
+class CustomerUpdate(BaseModel):
+    """Обновление профиля покупателя."""
+    first_name: str | None = Field(None, min_length=1, max_length=50)
+    phone: str | None = Field(None, max_length=12)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        if v and not re.match(r"^\+7\d{10}$", v):
+            raise ValueError("Телефон должен быть в формате +7XXXXXXXXXX")
+        return v
+
+
+class CustomerResponse(BaseModel):
+    """Ответ с данными профиля покупателя."""
+    id: int
+    first_name: str
+    phone: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class FarmerUpdate(BaseModel):
+    """Обновление профиля фермера."""
+    farm_name: str | None = Field(None, max_length=150)
+    farm_address: str | None = Field(None, max_length=250)
+    phone: str | None = Field(None, max_length=12)
+    latitude: float | None = None
+    longitude: float | None = None
+
+
+class FarmerResponse(BaseModel):
+    """Ответ с данными профиля фермера."""
+    id: int
+    farm_name: str
+    farm_address: str | None
+    phone: str | None
+    is_verified: bool
+    latitude: float | None
+    longitude: float | None
+
+    model_config = {"from_attributes": True}
