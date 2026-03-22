@@ -1,60 +1,48 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { ordersAPI } from '../services/api'
+import api from '../services/api'
+import styles from './OrdersPage.module.css'
 
-const STATUS_LABELS = {
-  new: 'Новый',
-  confirmed: 'Подтверждён',
-  ready: 'Готов к выдаче',
-  delivered: 'Доставлен',
-  cancelled: 'Отменён',
-}
+const STATUS_LABELS = { new: 'Новый', confirmed: 'Подтверждён', ready: 'Готов к выдаче', delivered: 'Выдан', cancelled: 'Отменён' }
+const STATUS_COLORS = { new: '#3498db', confirmed: '#2ecc71', ready: '#f39c12', delivered: '#27ae60', cancelled: '#e74c3c' }
 
 export default function CustomerOrdersPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
-    ordersAPI.getMy()
-      .then((res) => setOrders(res.data.items))
-      .catch(() => setError('Не удалось загрузить заказы'))
-      .finally(() => setLoading(false))
+    api.get('/orders/my').then(r => setOrders(r.data.items)).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <p>Загрузка...</p>
-  if (error) return <p style={{ color: 'red' }}>{error}</p>
+  if (loading) return <div className={styles.loading}>Загрузка заказов...</div>
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: 20 }}>
-      <h1>Мои заказы</h1>
-      <Link to="/catalog">← В каталог</Link>
-
-      {orders.length === 0 && <p style={{ marginTop: 16 }}>У вас пока нет заказов</p>}
-
-      {orders.map((order) => (
-        <div key={order.id} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16, marginTop: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <strong>Заказ #{order.id}</strong>
-            <span style={{ background: '#f0f0f0', padding: '2px 8px', borderRadius: 4 }}>
-              {STATUS_LABELS[order.status] || order.status}
-            </span>
-          </div>
-          <p>Дата: {new Date(order.order_date).toLocaleDateString('ru-RU')}</p>
-          <p>Сумма: {order.total_amount} ₽</p>
-          <p>Оплата: {order.payment_method}</p>
-          <div>
-            <strong>Позиции:</strong>
-            <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
-              {order.items.map((item) => (
-                <li key={item.id}>
-                  Товар #{item.product_id} — {item.quantity} × {item.price_at_order} ₽
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div className={styles.page}>
+      <h2>Мои заказы</h2>
+      {orders.length === 0 ? <p className={styles.empty}>У вас пока нет заказов</p> : (
+        <div className={styles.list}>
+          {orders.map(order => (
+            <div key={order.id} className={styles.card}>
+              <div className={styles.cardHead}>
+                <span className={styles.orderId}>Заказ #{order.id}</span>
+                <span className={styles.badge} style={{background: STATUS_COLORS[order.status]}}>{STATUS_LABELS[order.status]}</span>
+                <span className={styles.date}>{new Date(order.order_date).toLocaleDateString('ru-RU')}</span>
+              </div>
+              <div className={styles.items}>
+                {order.items.map(item => (
+                  <div key={item.id} className={styles.item}>
+                    <span>Товар #{item.product_id}</span>
+                    <span>{item.quantity} шт × {item.price_at_order} ₽</span>
+                  </div>
+                ))}
+              </div>
+              <div className={styles.total}>Итого: <strong>{parseFloat(order.total_amount).toFixed(2)} ₽</strong></div>
+              <div className={styles.meta}>
+                Оплата: {order.payment_method} | {order.payment_status ? '✅ Оплачен' : '⏳ Ожидает оплаты'}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }

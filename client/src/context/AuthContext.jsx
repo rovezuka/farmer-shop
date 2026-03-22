@@ -1,55 +1,37 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import { createContext, useContext, useState, useEffect } from 'react'
 
-const AuthContext = createContext(null);
+const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Восстановление сессии из localStorage
-    const token = localStorage.getItem('access_token');
-    const role = localStorage.getItem('role');
-    const userId = localStorage.getItem('user_id');
-    if (token && role) {
-      setUser({ token, role, userId: parseInt(userId) });
-    }
-    setLoading(false);
-  }, []);
+    const token = localStorage.getItem('access_token')
+    const role = localStorage.getItem('role')
+    const user_id = localStorage.getItem('user_id')
+    if (token && role) setUser({ token, role, user_id: Number(user_id) })
+    setLoading(false)
+  }, [])
 
-  const login = async (email, password) => {
-    const res = await authAPI.login({ email, password });
-    const { access_token, refresh_token, role, user_id } = res.data;
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('refresh_token', refresh_token);
-    localStorage.setItem('role', role);
-    localStorage.setItem('user_id', user_id);
-    setUser({ token: access_token, role, userId: user_id });
-    return res.data;
-  };
-
-  const register = async (data) => {
-    const res = await authAPI.register(data);
-    const { access_token, refresh_token, role, user_id } = res.data;
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('refresh_token', refresh_token);
-    localStorage.setItem('role', role);
-    localStorage.setItem('user_id', user_id);
-    setUser({ token: access_token, role, userId: user_id });
-    return res.data;
-  };
+  const login = (data) => {
+    localStorage.setItem('access_token', data.access_token)
+    localStorage.setItem('refresh_token', data.refresh_token)
+    localStorage.setItem('role', data.role)
+    localStorage.setItem('user_id', data.user_id)
+    setUser({ token: data.access_token, role: data.role, user_id: data.user_id })
+  }
 
   const logout = () => {
-    localStorage.clear();
-    setUser(null);
-  };
+    localStorage.clear()
+    setUser(null)
+  }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext)

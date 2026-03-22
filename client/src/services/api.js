@@ -1,88 +1,49 @@
-/**
- * Модуль для взаимодействия с FastAPI бэкендом.
- * Все запросы идут через axios с автоматическим добавлением JWT.
- */
-import axios from 'axios';
+import axios from 'axios'
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const api = axios.create({ baseURL: 'http://localhost:8000/api/v1' })
 
-const api = axios.create({
-  baseURL: API_BASE,
-  headers: { 'Content-Type': 'application/json' },
-});
+api.interceptors.request.use(cfg => {
+  const token = localStorage.getItem('access_token')
+  if (token) cfg.headers.Authorization = `Bearer ${token}`
+  return cfg
+})
 
-// Перехватчик: добавляем JWT-токен к каждому запросу
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Перехватчик ответов: обработка 401 (refresh token)
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (refreshToken) {
+  r => r,
+  async err => {
+    const status = err.response?.status
+    const originalRequest = err.config
+
+    // Не пытаемся refresh для auth-эндпоинтов
+    if (originalRequest.url?.includes('/auth/')) {
+      return Promise.reject(err)
+    }
+
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+      const refresh = localStorage.getItem('refresh_token')
+      if (refresh) {
         try {
-          const res = await axios.post(`${API_BASE}/auth/refresh`, {
-            refresh_token: refreshToken,
-          });
-          localStorage.setItem('access_token', res.data.access_token);
-          localStorage.setItem('refresh_token', res.data.refresh_token);
-          // Повторяем исходный запрос
-          error.config.headers.Authorization = `Bearer ${res.data.access_token}`;
-          return api(error.config);
+          const { data } = await axios.post(
+            'http://localhost:8000/api/v1/auth/refresh',
+            { refresh_token: refresh }
+          )
+          localStorage.setItem('access_token', data.access_token)
+          localStorage.setItem('refresh_token', data.refresh_token)
+          originalRequest.headers.Authorization = `Bearer ${data.access_token}`
+          return api(originalRequest)
         } catch {
-          // Refresh тоже истёк — выходим
-          localStorage.clear();
-          window.location.href = '/login';
+          // refresh не удался — только тогда разлогиниваем
+          localStorage.clear()
+          window.location.href = '/login'
         }
+      } else {
+        localStorage.clear()
+        window.location.href = '/login'
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(err)
   }
-);
+)
 
-// ========== AUTH ==========
-export const authAPI = {
-  register: (data) => api.post('/auth/register', data),
-  login: (data) => api.post('/auth/login', data),
-};
-
-// ========== PRODUCTS ==========
-export const productsAPI = {
-  getAll: (params) => api.get('/products', { params }),
-  getById: (id) => api.get(`/products/${id}`),
-  create: (data) => api.post('/products', data),
-  update: (id, data) => api.put(`/products/${id}`, data),
-  delete: (id) => api.delete(`/products/${id}`),
-};
-
-// ========== ORDERS ==========
-export const ordersAPI = {
-  create: (data) => api.post('/orders', data),
-  getMy: (params) => api.get('/orders/my', { params }),
-  getFarmerOrders: (params) => api.get('/orders/farmer', { params }),
-  updateStatus: (id, data) => api.patch(`/orders/${id}/status`, data),
-};
-
-// ========== CATEGORIES ==========
-export const categoriesAPI = {
-  getAll: () => api.get('/categories'),
-};
-
-// ========== PICKUP POINTS ==========
-export const pickupPointsAPI = {
-  getAll: () => api.get('/pickup-points'),
-};
-
-// ========== ANALYTICS ==========
-export const analyticsAPI = {
-  getSales: (period) => api.get('/analytics/sales', { params: { period } }),
-};
-
-export default api;
+export default api

@@ -1,0 +1,52 @@
+.page { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+.page h2 { color: #2d6a2d; margin-bottom: 1.5rem; }
+.tabs { display: flex; gap: .5rem; margin-bottom: 2rem; border-bottom: 2px solid #e0e0e0; padding-bottom: .5rem; }
+.tab, .activeTab { padding: .5rem 1.2rem; border: none; background: none; font-size: 1rem; border-radius: 8px; }
+.activeTab { background: #2d6a2d; color: #fff; font-weight: 600; }
+.tab:hover { background: #f0f5f0; }
+.loading { text-align: center; padding: 4rem; color: #888; }
+.list { display: flex; flex-direction: column; gap: 1rem; }
+.card { background: #fff; border-radius: 12px; padding: 1.2rem 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.cardHead { display: flex; align-items: center; gap: 1rem; margin-bottom: .6rem; font-weight: 600; flex-wrap: wrap; }
+.status { background: #e8f5e9; color: #2d6a2d; padding: .15rem .6rem; border-radius: 12px; font-size: .8rem; }
+.date { color: #888; font-size: .82rem; margin-left: auto; font-weight: 400; }
+.items { border-top: 1px solid #f0f0f0; padding-top: .5rem; }
+.orderItem { display: flex; justify-content: space-between; font-size: .9rem; color: #555; padding: .2rem 0; }
+.cardFoot { display: flex; justify-content: space-between; align-items: center; margin-top: .7rem; padding-top: .7rem; border-top: 1px solid #f0f0f0; }
+.actions { display: flex; gap: .5rem; }
+.btnConfirm { background: #2d6a2d; color: #fff; border: none; padding: .4rem .9rem; border-radius: 6px; font-size: .85rem; }
+.btnCancel { background: #e74c3c; color: #fff; border: none; padding: .4rem .9rem; border-radius: 6px; font-size: .85rem; }
+.addBtn { background: #2d6a2d; color: #fff; border: none; padding: .6rem 1.2rem;
+  border-radius: 8px; font-size: .95rem; margin-bottom: 1rem; }
+.productForm { background: #fff; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.productForm h3 { color: #2d6a2d; margin-bottom: 1rem; }
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.formGrid label, .productForm label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; font-weight: 500; }
+.formGrid input, .formGrid select, .productForm textarea {
+  padding: .45rem .6rem; border: 1px solid #ddd; border-radius: 6px; font-size: .9rem; }
+.productForm textarea { padding: .45rem .6rem; border: 1px solid #ddd; border-radius: 6px; font-size: .9rem; width: 100%; }
+.submitBtn { background: #2d6a2d; color: #fff; border: none; padding: .65rem 1.5rem;
+  border-radius: 8px; font-size: 1rem; font-weight: 600; margin-top: 1rem; }
+.productGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+.productCard { background: #fff; border-radius: 10px; padding: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,.07);
+  display: flex; flex-direction: column; gap: .35rem; }
+.productCard strong { color: #1a3d1a; }
+.productCard span { font-size: .85rem; color: #666; }
+.delBtn { background: #e74c3c; color: #fff; border: none; padding: .3rem .6rem;
+  border-radius: 6px; font-size: .8rem; margin-top: .3rem; align-self: flex-start; }
+.analytics { }
+.periodSelector { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+.periodBtn, .activePeriod { padding: .4rem 1rem; border: 1px solid #2d6a2d; border-radius: 20px;
+  font-size: .9rem; background: #fff; color: #2d6a2d; }
+.activePeriod { background: #2d6a2d; color: #fff; }
+.statsGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.stat { background: #fff; border-radius: 12px; padding: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; gap: .4rem; text-align: center; }
+.stat span { font-size: .9rem; color: #888; }
+.stat strong { font-size: 1.5rem; color: #2d6a2d; }
+.topList { display: flex; flex-direction: column; gap: .5rem; margin-top: .75rem; }
+.topItem { background: #fff; border-radius: 8px; padding: .7rem 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  display: flex; align-items: center; gap: 1rem; }
+.topNum { font-size: 1.1rem; font-weight: 700; color: #f5a623; width: 1.5rem; text-align: center; }
+.topName { flex: 1; font-weight: 500; }
+.topRevenue { font-weight: 700; color: #2d6a2d; }

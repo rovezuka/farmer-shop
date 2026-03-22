@@ -73,7 +73,7 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     # Генерация токенов
-    token_data = {"sub": user.id, "role": user.role.value}
+    token_data = {"sub": str(user.id), "role": user.role.value}
     return TokenResponse(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
@@ -97,7 +97,7 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
             detail="Неверный email или пароль",
         )
 
-    token_data = {"sub": user.id, "role": user.role.value}
+    token_data = {"sub": str(user.id), "role": user.role.value}
     return TokenResponse(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
@@ -119,7 +119,7 @@ async def refresh_token(data: TokenRefresh, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(401, detail="Пользователь не найден")
 
-    token_data = {"sub": user.id, "role": user.role.value}
+    token_data = {"sub": str(user.id), "role": user.role.value}
     return TokenResponse(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
