@@ -1,0 +1,61 @@
+"""
+Точка входа FastAPI приложения «Фермерская лавка».
+Автоматическая документация: http://localhost:8000/docs (Swagger UI)
+"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from app.core.config import settings
+from app.api import auth, products, orders, analytics, categories, pickup_points
+# from fastapi.staticfiles import StaticFiles
+# import os
+
+# Создание приложения
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="API системы автоматизации продажи местных фермерских продуктов",
+    docs_url="/docs",       # Swagger UI
+    redoc_url="/redoc",     # ReDoc
+)
+
+# # Раздача статических файлов клиента
+# client_dist = os.path.join(os.path.dirname(__file__), "../../client/dist")
+# if os.path.exists(client_dist):
+#     app.mount("/", StaticFiles(directory=client_dist, html=True), name="client")
+
+# CORS (SRS раздел 5.4: безопасность коммуникаций)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Подключение роутеров
+API_PREFIX = "/api/v1"
+app.include_router(auth.router, prefix=API_PREFIX)
+app.include_router(products.router, prefix=API_PREFIX)
+app.include_router(orders.router, prefix=API_PREFIX)
+app.include_router(analytics.router, prefix=API_PREFIX)
+app.include_router(categories.router, prefix=API_PREFIX)
+app.include_router(pickup_points.router, prefix=API_PREFIX)
+# app.include_router(reviews.router, prefix=API_PREFIX)
+# app.include_router(notifications.router, prefix=API_PREFIX)
+# app.include_router(admin.router, prefix=API_PREFIX)
+
+
+@app.get("/", tags=["Главная"])
+async def root():
+    return {
+        "message": "Фермерская лавка API",
+        "docs": "/docs",
+        "version": settings.APP_VERSION,
+    }
+
+
+@app.get("/health", tags=["Здоровье"])
+async def health_check():
+    return {"status": "ok"}
